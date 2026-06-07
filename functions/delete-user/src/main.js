@@ -8,27 +8,11 @@ export default async ({ req, res, log, error }) => {
     const databaseId = process.env.APPWRITE_DATABASE_ID;
     const usersTableId = process.env.APPWRITE_USERS_TABLE_ID;
 
-    if (!endpoint || !projectId || !apiKey || !databaseId || !usersTableId) {
-      return res.json(
-        {
-          ok: false,
-          message: "Function environment variables are missing.",
-        },
-        500
-      );
-    }
-
     const payload = req.bodyJson || JSON.parse(req.body || "{}");
     const { userId } = payload;
 
     if (!userId) {
-      return res.json(
-        {
-          ok: false,
-          message: "userId is required.",
-        },
-        400
-      );
+      return res.json({ ok: false, message: "userId is required." }, 400);
     }
 
     const client = new Client()
@@ -39,21 +23,19 @@ export default async ({ req, res, log, error }) => {
     const users = new Users(client);
     const tablesDB = new TablesDB(client);
 
-    const userRowsResult = await tablesDB.listRows({
+    const result = await tablesDB.listRows({
       databaseId,
       tableId: usersTableId,
       queries: [Query.equal("authUserId", userId)],
     });
 
-    const rows = userRowsResult.rows || userRowsResult.documents || [];
+    const rows = result.rows || result.documents || [];
 
     if (rows.length > 0) {
-      const userRow = rows[0];
-
       await tablesDB.updateRow({
         databaseId,
         tableId: usersTableId,
-        rowId: userRow.$id,
+        rowId: rows[0].$id,
         data: {
           deleted: true,
           deletedAt: new Date().toISOString(),
@@ -62,16 +44,12 @@ export default async ({ req, res, log, error }) => {
     }
 
     try {
-      await users.deleteSessions({
-        userId,
-      });
+      await users.deleteSessions({ userId });
     } catch (sessionError) {
-      log("deleteSessions failed or no sessions: " + sessionError.message);
+      log("deleteSessions failed: " + sessionError.message);
     }
 
-    await users.delete({
-      userId,
-    });
+    await users.delete({ userId });
 
     return res.json({
       ok: true,
@@ -79,13 +57,6 @@ export default async ({ req, res, log, error }) => {
     });
   } catch (err) {
     error(err.message);
-
-    return res.json(
-      {
-        ok: false,
-        message: err.message,
-      },
-      500
-    );
+    return res.json({ ok: false, message: err.message }, 500);
   }
 };
