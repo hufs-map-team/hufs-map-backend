@@ -18,3 +18,21 @@
 
 `authUserId`는 Appwrite Authentication에서 생성되는 사용자 고유 ID와 연결된다.  
 프론트엔드에서는 `account.get()`으로 현재 로그인한 사용자의 ID를 가져오고, users 컬렉션에서 `authUserId`가 같은 row를 조회하여 사용자 정보를 불러온다.
+---
+
+## Building Favorites
+
+건물 즐겨찾기는 별도 Collection을 만들지 않고 users 컬렉션의 `favoriteBuildings` 배열 필드로 관리한다.
+
+### Field
+
+| Field | Type | Required | Default |
+|---|---|---|---|
+| favoriteBuildings | string[] | no | [] |
+
+### 저장 예시
+
+```json
+{
+  "favoriteBuildings": ["library", "engineering", "dormitory"]
+}
